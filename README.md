@@ -1,4 +1,4 @@
-# sheet
+# sheet [![Build Status](https://travis-ci.org/fgnass/sheet.png)](https://travis-ci.org/fgnass/sheet)
 
 CSS compiler with built-in source-map support. Generates CSS from an AST like
 the one provided by [css-parse](https://github.com/visionmedia/css-parse).
