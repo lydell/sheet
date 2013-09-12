@@ -1,3 +1,4 @@
+var basename = require('path').basename
 var SourceMapGenerator = require('source-map').SourceMapGenerator
 
 /**
@@ -7,17 +8,37 @@ module.exports = function(node, opts) {
 
   opts = opts || {}
   var compress = opts.compress
-    , indentation = opts.compress ? '' : opts.indent || '  '
+    , indentation = opts.indent || '  '
     , css = ''
     , line = 1
     , column = 1
     , level = 1
     , sourceMap
 
-  if (opts.map || opts.mapUrl) {
+  if (opts.mapUrl) {
       sourceMap = new SourceMapGenerator({
-      file: opts.file || '',
+      file: opts.file || basename(opts.mapUrl, '.map'),
       sourceRoot: opts.rootUrl
+    })
+  }
+
+  /**
+   * Add a mapping to the source map, from the current location to the
+   * original location of the given node. Pass null to indicate that
+   * the current location is not associated with any original
+   * location.
+   */
+  function addMapping(node) {
+    if (!sourceMap || (node && !node.position)) return
+
+    sourceMap.addMapping({
+      original: node && adjustColumn(node.position.start),
+      generated: adjustColumn({
+        line: line,
+        column: column
+      }),
+      source: node && (node.position.original || opts.original || '?'),
+      name: node && node.position.name
     })
   }
 
@@ -31,50 +52,51 @@ module.exports = function(node, opts) {
   }
 
   /**
-   * Add the given mapping to the source map.
+   * Append the given `str`. If compression is turned on, `str` is
+   * trimmed first.
    */
-  function addMapping(m) {
-    sourceMap.addMapping({
-      generated: adjustColumn(m.generated),
-      original: adjustColumn(m.original),
-      source: m.original.file || opts.original || '?',
-      name: m.original.name || ''
-    })
-  }
-
-  /**
-   * Append the given `str`.
-   * If `indent` is omitted the default indentation is applied.
-   * If `indent` is falsy `str` is append without indentation.
-   * In compression mode all indetation is ignored.
-   */
-  function write(str, indent) {
+  function write(str) {
     if (typeof str != 'string') throw new TypeError()
-    if (!compress) {
-      if (indent === undefined) {
-        indent = new Array(level).join(indentation)
-      }
-      if (indent) {
-        css += indent
-        column += indent.length
-      }
+    if (compress) {
+      str = str.trim()
     }
     css += str
     column += str.length
   }
 
   /**
-   * Append the given `str` followed by a line break.
-   * This increases the internal line counter by one unless compression is turned
-   * on, in which case no line breaks are added.
+   * Append the given `str`, and unless compression is turned on, a
+   * new line with the same amount of indentation as the last line.
    */
-  function writeln(str, indent) {
-    if (arguments.length) write(str, indent)
-    if (!compress) {
-      css += '\n'
-      line++
-      column = 1
-    }
+  function writeln(str) {
+    if (arguments.length) write(str)
+    if (compress) return
+    addMapping(null)
+    css = css.replace(/[ \t]+$/, '')
+    var currentIndent = new Array(level).join(indentation)
+    css += '\n' + currentIndent
+    line++
+    column = 1 + currentIndent.length
+  }
+
+  /**
+   * Indent, unless compression is turned on.
+   */
+  function indent() {
+    if (compress) return
+    level++
+    css += indentation
+    column += indentation.length
+  }
+
+  /**
+   * Dedent, unless compression is turned on.
+   */
+  function dedent() {
+    if (compress || level === 0) return
+    level--
+    css = css.slice(0, -indentation.length)
+    column -= indentation.length
   }
 
   /**
@@ -105,15 +127,17 @@ module.exports = function(node, opts) {
    */
   function comment(node) {
     if (compress) return
+    addMapping(node)
+    var newlines = node.comment.match(/\r\n|\r|\n/g) || []
+    line += newlines.length
     writeln('/*' + node.comment + '*/')
-    var newlines = node.comment.match(/\n/g)
-    if (newlines) line += newlines.length
   }
 
   /**
    * Visit an import node.
    */
   function atImport(node) {
+    addMapping(node)
     write('@import ' + node.import + ';')
   }
 
@@ -121,11 +145,12 @@ module.exports = function(node, opts) {
    * Visit a media node.
    */
   function atMedia(node) {
+    addMapping(node)
     write('@media ' + node.media)
-    writeln('{', ' ')
-    level++
+    writeln(' {')
+    indent()
     each(node.rules, visit)
-    level--
+    dedent()
     writeln('}')
   }
 
@@ -133,6 +158,7 @@ module.exports = function(node, opts) {
    * Visit a charset node.
    */
   function atCharset(node) {
+    addMapping(node)
     writeln('@charset ' + node.charset + ';')
   }
 
@@ -140,11 +166,12 @@ module.exports = function(node, opts) {
    * Visit a keyframes node.
    */
   function atKeyframes(node) {
+    addMapping(node)
     write('@' + (node.vendor || '') + 'keyframes ' + node.name)
-    writeln('{', ' ')
-    level++
+    writeln(' {')
+    indent()
     each(node.keyframes, keyframe)
-    level--
+    dedent()
     writeln('}')
   }
 
@@ -152,11 +179,12 @@ module.exports = function(node, opts) {
    * Visit a keyframe node.
    */
   function keyframe(node) {
+    addMapping(node)
     write(node.values.join(', '))
-    writeln('{', ' ')
-    level++
+    writeln(' {')
+    indent()
     declarations(node.declarations)
-    level--
+    dedent()
     writeln('}')
   }
 
@@ -164,27 +192,19 @@ module.exports = function(node, opts) {
    * Visit a rule node.
    */
   function rule(node) {
-    if (sourceMap && node.position) {
-      var indent = (level-1) * indentation.length
-      addMapping({
-        original: node.position.start,
-        generated: {
-          line: line,
-          column: column + indent
-        }
-      })
-    }
-
     var last = node.selectors.length-1
     node.selectors.forEach(function(s, i) {
+      // Each selector is simply a string, and not a real node, so
+      // we have to map them to the beginning of the node.
+      addMapping(node)
       write(s)
-      if (i == last) writeln('{', ' ')
-      else writeln(',')
+      if (i != last) writeln(',')
     })
 
-    level++
+    writeln(' {')
+    indent()
     declarations(node.declarations)
-    level--
+    dedent()
     writeln('}')
   }
 
@@ -194,18 +214,20 @@ module.exports = function(node, opts) {
   function declarations(nodes) {
     var last = nodes.length-1
     nodes.forEach(function(node, i) {
+      addMapping(node)
       if (node.comment) comment(node)
       else {
-        write(node.property + ':')
-        write(node.value, ' ')
-        if (i != last) write(';', false)
+        write(node.property + ': ')
+        write(node.value)
+        if (!(compress && i == last)) write(';')
         writeln()
       }
     })
   }
 
   each(node.stylesheet.rules, visit)
-  if (opts.mapUrl) css += '\n/*# sourceMappingURL=' + opts.mapUrl + ' */'
+  css = css.trim()
+  if (sourceMap) css += '\n/*# sourceMappingURL=' + opts.mapUrl + ' */'
 
   return {
     css: css,

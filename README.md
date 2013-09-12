@@ -1,7 +1,8 @@
 # sheet [![Build Status](https://travis-ci.org/fgnass/sheet.png)](https://travis-ci.org/fgnass/sheet)
 
-CSS compiler with built-in source-map support. Generates CSS from an AST like
-the one provided by [css-parse](https://github.com/visionmedia/css-parse).
+CSS compiler with built-in source map support. Generates CSS from an AST like
+the one provided by [css-parse](https://github.com/visionmedia/css-parse) (if
+you use that particular module, make sure to turn its `position` option on).
 
 ## Usage
 
@@ -12,6 +13,31 @@ var s = sheet(ast, { compress: true, mapUrl: '/foo.map' })
 console.log(s.css)
 console.log(s.map)
 ```
+
+`sheet(ast, [options])` returns:
+
+```js
+return {
+  css: css,
+  map: sourceMap.toString(),
+  sourceMap: sourceMap,
+  toString: function() {
+    return css
+  }
+}
+```
+
+## Options
+
+- `indent`: The indentation to use. Default: Two spaces.
+- `compress`: Skip comments and whitespace. Default: Off.
+- `mapUrl`: Create a source map with the specified URL. Default: Off.
+- `file`: The name of the file that you will store the generated CSS in, which
+  will be associated with the source map. Default: The filename of the source
+  map, minus ".map" if it ends so.
+- `original`: URL to the original source. If `position.original` of a node is
+  available, that is used in the first place, though. Default: "?".
+- `rootUrl`: The optional root for all relative URLs in the source map.
 
 ## The MIT License (MIT)
 

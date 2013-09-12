@@ -1,11 +1,16 @@
 {
   "name": "sheet",
   "version": "0.0.1",
-  "description": "CSS Compiler",
+  "description": "CSS Compiler with source maps.",
   "keywords": [
     "css",
-    "stylesheet"
+    "stylesheet",
+    "compiler",
+    "source map"
   ],
+  "homepage": "https://github.com/fgnass/sheet",
+  "bugs": "https://github.com/fgnass/sheet/issues",
+  "repository": "fgnass/sheet",
   "scripts": {
     "test": "./node_modules/.bin/mocha --require should"
   },
@@ -17,5 +22,6 @@
   "main": "index",
   "dependencies": {
     "source-map": "~0.1.25"
-  }
+  },
+  "license": "MIT"
 }
