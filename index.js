@@ -57,9 +57,7 @@ module.exports = function(node, opts) {
    */
   function write(str) {
     if (typeof str != 'string') throw new TypeError()
-    if (compress) {
-      str = str.trim()
-    }
+    if (compress) str = str.trim()
     css += str
     column += str.length
   }
@@ -102,11 +100,12 @@ module.exports = function(node, opts) {
   /**
    * Invoke `fn` for each item in `nodes`.
    */
-  function each(nodes, fn) {
+  function each(nodes, fn, newLine) {
+    if (newLine === undefined) newLine = true
     var last = nodes.length-1
     nodes.forEach(function(node, i) {
-      fn(node)
-      if (i !== last) writeln()
+      fn(node, i === last)
+      if (i !== last && newLine) writeln()
     })
   }
 
@@ -170,7 +169,7 @@ module.exports = function(node, opts) {
     write('@' + (node.vendor || '') + 'keyframes ' + node.name)
     writeln(' {')
     indent()
-    each(node.keyframes, keyframe)
+    each(node.keyframes, keyframe, false)
     dedent()
     writeln('}')
   }
@@ -178,14 +177,18 @@ module.exports = function(node, opts) {
   /**
    * Visit a keyframe node.
    */
-  function keyframe(node) {
-    addMapping(node)
-    write(node.values.join(', '))
-    writeln(' {')
-    indent()
-    declarations(node.declarations)
-    dedent()
-    writeln('}')
+  function keyframe(node, last) {
+    if (node.comment) comment(node)
+    else {
+      addMapping(node)
+      write(node.values.join(', '))
+      writeln(' {')
+      indent()
+      declarations(node.declarations)
+      dedent()
+      writeln('}')
+      if (!last) writeln()
+    }
   }
 
   /**
@@ -212,17 +215,16 @@ module.exports = function(node, opts) {
    * Visit a declaration node.
    */
   function declarations(nodes) {
-    var last = nodes.length-1
-    nodes.forEach(function(node, i) {
-      addMapping(node)
+    each(nodes, function(node, last) {
       if (node.comment) comment(node)
       else {
+        addMapping(node)
         write(node.property + ': ')
         write(node.value)
-        if (!(compress && i == last)) write(';')
+        if (!(compress && last)) write(';')
         writeln()
       }
-    })
+    }, false)
   }
 
   each(node.stylesheet.rules, visit)

@@ -1,1 +1,1 @@
-{"version":3,"file":"keyframes.css","sources":["keyframes.css"],"names":[],"mappings":"AAAA,mB;EACE,M;IACE,W;IACA,W;G;E;EAGF,I;IACE,W;G;C","sourceRoot":"/foo/bar"}
+{"version":3,"file":"keyframes.css","sources":["keyframes.css"],"names":[],"mappings":"AAAA,mB;EACE,a;EACA,W;IACE,W;IACA,W;G;E;EAGF,I;IACE,W;G;C","sourceRoot":"/foo/bar"}

@@ -17,7 +17,7 @@ console.log(s.map)
 `sheet(ast, [options])` returns:
 
 ```js
-return {
+{
   css: css,
   map: sourceMap.toString(),
   sourceMap: sourceMap,

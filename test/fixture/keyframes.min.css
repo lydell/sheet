@@ -1,1 +1,1 @@
-@keyframes fadeIn{from{opacity:0;color:#000}to{opacity:1}}
+@keyframes fadeIn{from, 50%{opacity:0;color:#000}to{opacity:1}}
