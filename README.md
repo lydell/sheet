@@ -2,14 +2,15 @@
 
 CSS compiler with built-in source map support. Generates CSS from an AST like
 the one provided by [css-parse](https://github.com/visionmedia/css-parse) (if
-you use that particular module, make sure to turn its `position` option on).
+you use that particular module, make sure to turn its `position` option on,
+and to pass in the `source`).
 
 ## Usage
 
 ```js
 var sheet = require('sheet')
 var ast = { stylesheet: { rules: [] }}
-var s = sheet(ast, { compress: true, mapUrl: '/foo.map' })
+var s = sheet(ast, { compress: true, map: true, file: 'foo.css' })
 console.log(s.css)
 console.log(s.map)
 ```
@@ -31,13 +32,13 @@ console.log(s.map)
 
 - `indent`: The indentation to use. Default: Two spaces.
 - `compress`: Skip comments and whitespace. Default: Off.
-- `mapUrl`: Create a source map with the specified URL. Default: Off.
+- `map`: Create source map. Default: Off.
 - `file`: The name of the file that you will store the generated CSS in, which
-  will be associated with the source map. Default: The filename of the source
-  map, minus ".map" if it ends so.
-- `original`: URL to the original source. If `position.original` of a node is
-  available, that is used in the first place, though. Default: "?".
-- `rootUrl`: The optional root for all relative URLs in the source map.
+  will be associated with the source map. Default: "?".
+- `sourceMappingURL`: The url to put in the `# sourceMappingURL=` comment.
+  Default: `file + '.map'`.
+- `sourceRoot`: The optional root for all relative source URLs in the source
+  map.
 
 ## The MIT License (MIT)
 

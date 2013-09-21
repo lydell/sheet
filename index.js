@@ -14,11 +14,14 @@ module.exports = function(node, opts) {
     , column = 1
     , level = 1
     , sourceMap
+    , file
 
-  if (opts.mapUrl) {
-      sourceMap = new SourceMapGenerator({
-      file: opts.file || basename(opts.mapUrl, '.map'),
-      sourceRoot: opts.rootUrl
+  if (opts.map) {
+    file = opts.file || '?'
+    opts.sourceMappingURL = opts.sourceMappingURL || file + '.map'
+    sourceMap = new SourceMapGenerator({
+      file: file,
+      sourceRoot: opts.sourceRoot
     })
   }
 
@@ -37,7 +40,7 @@ module.exports = function(node, opts) {
         line: line,
         column: column
       }),
-      source: node && (node.position.original || opts.original || '?'),
+      source: node && node.position.source,
       name: node && node.position.name
     })
   }
@@ -229,7 +232,7 @@ module.exports = function(node, opts) {
 
   each(node.stylesheet.rules, visit)
   css = css.trim()
-  if (sourceMap) css += '\n/*# sourceMappingURL=' + opts.mapUrl + ' */'
+  if (sourceMap) css += '\n/*# sourceMappingURL=' + opts.sourceMappingURL + ' */'
 
   return {
     css: css,
