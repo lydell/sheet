@@ -36,7 +36,7 @@ console.log(s.map)
 - `file`: The name of the file that you will store the generated CSS in, which
   will be associated with the source map. Default: "?".
 - `sourceMappingURL`: The url to put in the `# sourceMappingURL=` comment.
-  Default: `file + '.map'`.
+  Default: `file + '.map'`. Pass `false` to omit the comment.
 - `sourceRoot`: The optional root for all relative source URLs in the source
   map.
 

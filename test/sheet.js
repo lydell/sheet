@@ -35,7 +35,7 @@ describe('sheet', function() {
     })
   })
 
-  it('should append sourceMappingURL comment', function() {
+  it('should append sourceMappingURL comment if appropriate', function() {
     var ast = { stylesheet: { rules: [] } }
 
     var compiled = sheet(ast, { map: true, sourceMappingURL: 'foo.map' })
@@ -43,6 +43,15 @@ describe('sheet', function() {
 
     var compiled = sheet(ast, { map: true, file: 'foo.bar' })
     compiled.css.should.equal('\n/*# sourceMappingURL=foo.bar.map */')
+
+    var compiled = sheet(ast, { map: true, file: 'foo.bar', sourceMappingURL: false })
+    compiled.css.should.equal('')
+
+    var compiled = sheet(ast, { map: true })
+    compiled.css.should.equal('')
+
+    var compiled = sheet(ast, { map: false, sourceMappingURL: 'foo.map' })
+    compiled.css.should.equal('')
   })
 
 })
